@@ -14,7 +14,6 @@ from plotly import tools
 from pdfrw import PdfReader, PdfWriter
 
 pd.set_option('display.max_columns', 100)
-
 path = str(os.path.dirname(os.path.realpath(__file__)))
 fig_path = path + '/figs/'
 if not os.path.exists(fig_path):
@@ -40,42 +39,69 @@ def save_pickle(contents, name):
 #                          sheet_name='SummaryOutputs')
 # save_pickle(df_learningrates, 'learning_rates')
 df_learningrates = load_pickle('learning_rates')
-# print(df_learningrates.head())
 
-y1 = 'Cost\nComp\nBAU - CEP ($/MWh)'
+
+#------SETTINGS------####
+ttl = 'NPV'
+key = 'All'
+export = False
+#-------------------#####
+
+xcol = 'Data\nCaseInfo\nCapacity (MW)'
+xlabel = 'Cumulative Capacity\n(MW)'
+if ttl == 'NPV':
+    ycol = 'Cost\nComp\nBAU - CEP (000)'
+    ylabel = 'BAU NPV - CEP NPV\n($000)'
+elif ttl == 'LCOE':
+    ycol = 'Cost\nComp\nBAU - CEP ($/MWh)'
+    ylabel = 'BAU NPV - CEP NPV\n($/MWh)'
 
 df_main = df_learningrates.loc[(df_learningrates['Scenario'] == '0main'), :]
-df_main = df_main.sort_values(by=[y1])
+df_main = df_main.sort_values(by=[ycol])
 df_main.reset_index(inplace=True)
+if export:
+    df_main.to_csv('df_main.csv')
+regions = sorted(list(set(df_main.loc[:, 'Data\nCaseInfo\nRegion'].values.tolist())))
+reg_colors = {'Northeast': '#005289',
+                  'Midwest': '#004c4a',
+                  'Southeast': '#ab0326',
+                  'Texas': '#fbab18',
+                  'Northcentral': '#507c1d',
+                  'Southwest': '#5e0215',
+                  'West': '#DB6F11'}
+col = 'Data\nCaseInfo\nType'
+screens = {'col': col, 'key': key}
 
-x = list(df_main.loc[:, 'Case'])
-y = list(df_main.loc[:, y1])
+if key != 'All':
+    df_main = df_main[df_main[screens['col']] == screens['key']]
 
-inc = 0
-o_x = 0
+
+fig = go.Figure()
+inc = 0 # increment: previous plant's capacity
+o_x = 0 # old x
+# x has to be numeric, refer to center point of each var-width bar
+# x tells it where to put center of bar, w tells how wide each bar should be
 for row in list(df_main.index):
-    cap = df_main.loc[row, x]
+    cap = df_main.loc[row, xcol]   # cap = current plant's capacity, x refers to the column type you want to use as var width
+    n_x = o_x + inc/2 + cap/2
+    df_main.loc[row, 'for_var_x'] = n_x
+    o_x = n_x
+    inc = cap
+for reg in regions:
+    df2 = df_main[df_main['Data\nCaseInfo\nRegion'] == reg]
+    fig.add_trace(go.Bar(y=df2.loc[:, ycol],
+                         x=df2.loc[:, 'for_var_x'].values.tolist(),
+                         width=df2.loc[:, xcol].values.tolist(), showlegend=True,
+                         name=reg, marker=dict(color=reg_colors[reg],
+                                               line=dict(color='rgb(255,255,255)', width=0.125))))
 
+title = 'CEP vs BAU Supply Curve, RMI Main, ' + screens['key'] + ', ' + ttl
+height = 100 + 250
 
-w = list(df_main.loc[:, 'Data\nCaseInfo\nCapacity (MW)'])
-
-# x = ['Grant', 'Loves', 'Charts']
-# y = [12, 3.2, 9.9]
-# w = [1, 1, 1]
-
-trace0 = go.Bar(
-    x=x,
-    y=y,
-    width=w
-)
-
-title = 'Super Important Data'
-height = 100 + 250 * len(y)
-
-data = [trace0]
-fig = go.Figure(data=data)
-fig['layout'].update(title=title, height=height, yaxis=dict(title='Values', tickformat='$,0'), xaxis=dict(title='Cases'))
-pio.write_image(fig, fig_path + 'supply_curve.jpg')
+# data = [trace0]
+# fig1 = go.Figure(data=data)
+fig['layout'].update(title=title, height=height, yaxis=dict(title=ylabel, tickformat='$,0'), xaxis=dict(title=xlabel))
+pio.write_image(fig, fig_path + 'supply_curve_'+screens['key']+'_'+ttl+'.png')
 # files = []
 # for filename in os.listdir(fig_path):
 #     if filename.endswith('.pdf'):
