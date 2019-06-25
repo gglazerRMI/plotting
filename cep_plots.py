@@ -38,29 +38,40 @@ def save_pickle(contents, name):
 # df_learningrates = pd.read_excel('/Users/gglazer/OneDrive - Rocky Mountain Institute/supplycurvemain.xlsx',
 #                          sheet_name='SummaryOutputs')
 # save_pickle(df_learningrates, 'learning_rates')
-df_learningrates = load_pickle('learning_rates')
+# df_learningrates = load_pickle('learning_rates')
+
+
+# df_dsm = pd.read_excel('/Users/gglazer/Downloads/DSM_20190614_1910.xlsx', sheet_name='SummaryOutputs')
+# save_pickle(df_dsm, 'dsm')
+df_dsm = load_pickle('dsm')
 
 
 #------SETTINGS------####
-ttl = 'NPV'
-key = 'All'
-export = False
+df1 = df_dsm  # can be df_dsm or df_learning rates
+ttl = 'Net'  # NPV, LCOE, or Net
+key = 'NGCC'  # NGCC or NGCT
+scenario = '0main'  # can be any scenario in the df 4aNoDSM
+export = True
 #-------------------#####
 
 xcol = 'Data\nCaseInfo\nCapacity (MW)'
 xlabel = 'Cumulative Capacity\n(MW)'
 if ttl == 'NPV':
     ycol = 'Cost\nComp\nBAU - CEP (000)'
-    ylabel = 'BAU NPV - CEP NPV\n($000)'
+    ylabel = 'CEP Cost Savings\n($000)'
 elif ttl == 'LCOE':
     ycol = 'Cost\nComp\nBAU - CEP ($/MWh)'
     ylabel = 'BAU NPV - CEP NPV\n($/MWh)'
+elif ttl == 'Net':
+    df1['Net Cost Diff'] = (df1['Cost\nBAU\nTotal (000)'] - df1['Cost\nCEP\nNet Cost (000)']) / 1000000
+    ycol = 'Net Cost Diff'
+    ylabel = 'CEP Net Cost Savings\n($B)'
 
-df_main = df_learningrates.loc[(df_learningrates['Scenario'] == '0main'), :]
+df_main = df1.loc[(df1['Scenario'] == scenario), :]
 df_main = df_main.sort_values(by=[ycol])
 df_main.reset_index(inplace=True)
 if export:
-    df_main.to_csv('df_main.csv')
+    df_main.to_csv('df_'+scenario+'.csv')
 regions = sorted(list(set(df_main.loc[:, 'Data\nCaseInfo\nRegion'].values.tolist())))
 reg_colors = {'Northeast': '#005289',
                   'Midwest': '#004c4a',
@@ -95,13 +106,13 @@ for reg in regions:
                          name=reg, marker=dict(color=reg_colors[reg],
                                                line=dict(color='rgb(255,255,255)', width=0.125))))
 
-title = 'CEP vs BAU Supply Curve, RMI Main, ' + screens['key'] + ', ' + ttl
+title = 'CEP vs BAU Supply Curve, ' + scenario + ', ' + screens['key'] + ', ' + ttl
 height = 100 + 250
 
 # data = [trace0]
 # fig1 = go.Figure(data=data)
 fig['layout'].update(title=title, height=height, yaxis=dict(title=ylabel, tickformat='$,0'), xaxis=dict(title=xlabel))
-pio.write_image(fig, fig_path + 'supply_curve_'+screens['key']+'_'+ttl+'.png')
+pio.write_image(fig, fig_path + 'supply_curve_'+scenario+'_'+screens['key']+'_'+ttl+'.png')
 # files = []
 # for filename in os.listdir(fig_path):
 #     if filename.endswith('.pdf'):
