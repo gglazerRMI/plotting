@@ -15,7 +15,7 @@ from pdfrw import PdfReader, PdfWriter
 
 pd.set_option('display.max_columns', 100)
 path = str(os.path.dirname(os.path.realpath(__file__)))
-fig_path = path + '/figs/'
+fig_path = path + '/figs/NRDC/'
 if not os.path.exists(fig_path):
     os.mkdir(fig_path)
 
@@ -42,17 +42,36 @@ def save_pickle(contents, name):
 
 
 # df_dsm = pd.read_excel('/Users/gglazer/Downloads/DSM_20190614_1910.xlsx', sheet_name='SummaryOutputs')
-# save_pickle(df_dsm, 'dsm')
-df_dsm = load_pickle('dsm')
-
+# df_tornado = pd.read_excel('/Users/gglazer/Desktop/Outputs_20190625_1352_tornado.xlsx', sheet_name='SummaryOutputs')
+df_pipes_full = pd.read_excel('/Users/gglazer/PycharmProjects/cepm/results/SummaryOnly_dsm_COpx_20190708_1933.xlsx', sheet_name='SummaryOutputs')
+save_pickle(df_pipes_full, 'pipelines_full')
+# df_tornado = load_pickle('tornado')
+# df_dsm = load_pickle('dsm')
+# df_pipes0 = load_pickle('pipelines0')
 
 #------SETTINGS------####
-df1 = df_dsm  # can be df_dsm or df_learning rates
-ttl = 'Net'  # NPV, LCOE, or Net
-key = 'NGCC'  # NGCC or NGCT
-scenario = '0main'  # can be any scenario in the df 4aNoDSM
-export = True
+df1 = df_pipes_full  #
+ttl = 'Net LCOE'  # NPV, LCOE, Net, or Net LCOE
+key = 'All'  # NGCC or NGCT or All
+scenario = '0main'  # can be any scenario in the df 4aNoDSM 2alowdsm
+tag = 'Final0.1'  # other identifying tag to be included in filename
+reg_text = 'NRDC_region'  # Data\nCaseInfo\nRegion
+text = False
+export = False
 #-------------------#####
+
+if reg_text == 'NRDC_region':
+    df1[reg_text] = ''
+    nrdc_regions = {'CT': 'New England', 'ME': 'New England', 'MA': 'New England', 'NH': 'New England', 'RI': 'New England',
+                    'VT': 'New England', 'NY': 'New York', 'DE': 'Mid-Atlantic', 'DC': 'Mid-Atlantic', 'KY': 'Mid-Atlantic',
+                    'MD': 'Mid-Atlantic', 'NJ': 'Mid-Atlantic', 'OH': 'Mid-Atlantic', 'PA': 'Mid-Atlantic',
+                    'WV': 'Mid-Atlantic', 'NC': 'Southeast', 'SC': 'Southeast', 'VA': 'Southeast', 'IL': 'MISO',
+                    'IN': 'MISO', 'IA': 'MISO', 'MI': 'MISO', 'MN': 'MISO', 'MO': 'MISO', 'ND': 'MISO', 'WI': 'MISO'}
+
+    for row in df1.index:
+        df1.loc[row, reg_text] = nrdc_regions[df1.loc[row, 'Data\nCaseInfo\nState']]
+
+print(df1.head())
 
 xcol = 'Data\nCaseInfo\nCapacity (MW)'
 xlabel = 'Cumulative Capacity\n(MW)'
@@ -66,13 +85,19 @@ elif ttl == 'Net':
     df1['Net Cost Diff'] = (df1['Cost\nBAU\nTotal (000)'] - df1['Cost\nCEP\nNet Cost (000)']) / 1000000
     ycol = 'Net Cost Diff'
     ylabel = 'CEP Net Cost Savings\n($B)'
+elif ttl == 'Net LCOE':
+    df1['Net LCOE Diff'] = (df1['Cost\nBAU\nLCOE ($/MWh)'] - df1['Cost\nCEP\nNet LCOE ($/MWh)'])
+    ycol = 'Net LCOE Diff'
+    # changed for Pipelines
+    ylabel = 'CEP Cost Savings\n($/MWh)'
 
 df_main = df1.loc[(df1['Scenario'] == scenario), :]
 df_main = df_main.sort_values(by=[ycol])
 df_main.reset_index(inplace=True)
 if export:
     df_main.to_csv('df_'+scenario+'.csv')
-regions = sorted(list(set(df_main.loc[:, 'Data\nCaseInfo\nRegion'].values.tolist())))
+regions = sorted(list(set(df_main.loc[:, reg_text].values.tolist())))
+
 reg_colors = {'Northeast': '#005289',
                   'Midwest': '#004c4a',
                   'Southeast': '#ab0326',
@@ -80,6 +105,20 @@ reg_colors = {'Northeast': '#005289',
                   'Northcentral': '#507c1d',
                   'Southwest': '#5e0215',
                   'West': '#DB6F11'}
+reg_colors2 = {'Northeast': '#005289',
+                  'Midwest': '#005289',
+                  'Southeast': '#005289',
+                  'Texas': '#005289',
+                  'Northcentral': '#005289',
+                  'Southwest': '#005289',
+                  'West': '#005289'}
+reg_colors_pipelines = {'New England': '#005289',
+                          'MISO': '#004c4a',
+                          'Southeast': '#ab0326',
+                          'New York': '#fbab18',
+                          'Mid-Atlantic': '#507c1d',
+                          'Southwest': '#5e0215',
+                          'West': '#DB6F11'}
 col = 'Data\nCaseInfo\nType'
 screens = {'col': col, 'key': key}
 
@@ -99,20 +138,24 @@ for row in list(df_main.index):
     o_x = n_x
     inc = cap
 for reg in regions:
-    df2 = df_main[df_main['Data\nCaseInfo\nRegion'] == reg]
+    df2 = df_main[df_main[reg_text] == reg]
     fig.add_trace(go.Bar(y=df2.loc[:, ycol],
                          x=df2.loc[:, 'for_var_x'].values.tolist(),
                          width=df2.loc[:, xcol].values.tolist(), showlegend=True,
-                         name=reg, marker=dict(color=reg_colors[reg],
+                         name=reg,
+                         marker=dict(color=reg_colors_pipelines[reg],
                                                line=dict(color='rgb(255,255,255)', width=0.125))))
+# text=df2.loc[:, 'Data\nCaseInfo\nYear in service'].values.tolist(),
+#                          textposition='outside',
 
-title = 'CEP vs BAU Supply Curve, ' + scenario + ', ' + screens['key'] + ', ' + ttl
-height = 100 + 250
+title = 'CEP vs BAU Supply Curve, ' + scenario + ', ' + screens['key'] + ', Rough Cumulative, ' + 'Net Cost Savings ($/MWh)'
+height = 450
+width = 730
 
 # data = [trace0]
 # fig1 = go.Figure(data=data)
-fig['layout'].update(title=title, height=height, yaxis=dict(title=ylabel, tickformat='$,0'), xaxis=dict(title=xlabel))
-pio.write_image(fig, fig_path + 'supply_curve_'+scenario+'_'+screens['key']+'_'+ttl+'.png')
+fig['layout'].update(title=title, height=height, width=width, yaxis=dict(title=ylabel, tickformat='$,0'), xaxis=dict(title=xlabel))
+pio.write_image(fig, fig_path + 'supply_curve_'+scenario+'_'+screens['key']+'_'+ttl+'_'+tag+'.png')
 # files = []
 # for filename in os.listdir(fig_path):
 #     if filename.endswith('.pdf'):
