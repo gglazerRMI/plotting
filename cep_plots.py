@@ -43,17 +43,18 @@ def save_pickle(contents, name):
 
 # df_dsm = pd.read_excel('/Users/gglazer/Downloads/DSM_20190614_1910.xlsx', sheet_name='SummaryOutputs')
 # df_tornado = pd.read_excel('/Users/gglazer/Desktop/Outputs_20190625_1352_tornado.xlsx', sheet_name='SummaryOutputs')
-df_pipes_full = pd.read_excel('/Users/gglazer/PycharmProjects/cepm/results/SummaryOnly_dsm_COpx_20190708_1933.xlsx', sheet_name='SummaryOutputs')
-save_pickle(df_pipes_full, 'pipelines_full')
+# df_pipes_full = pd.read_excel('/Users/gglazer/PycharmProjects/cepm/results/SummaryOnly_dsm_COpx_20190708_1933.xlsx', sheet_name='SummaryOutputs')
+# save_pickle(df_pipes_full, 'pipelines_full')
 # df_tornado = load_pickle('tornado')
 # df_dsm = load_pickle('dsm')
 # df_pipes0 = load_pickle('pipelines0')
+df_pipes_full = load_pickle('pipelines_full')
 
 #------SETTINGS------####
 df1 = df_pipes_full  #
 ttl = 'Net LCOE'  # NPV, LCOE, Net, or Net LCOE
 key = 'All'  # NGCC or NGCT or All
-scenario = '0main'  # can be any scenario in the df 4aNoDSM 2alowdsm
+scenario = '3xdsm'  # can be any scenario in the df 4aNoDSM 2alowdsm
 tag = 'Final0.1'  # other identifying tag to be included in filename
 reg_text = 'NRDC_region'  # Data\nCaseInfo\nRegion
 text = False
@@ -70,8 +71,6 @@ if reg_text == 'NRDC_region':
 
     for row in df1.index:
         df1.loc[row, reg_text] = nrdc_regions[df1.loc[row, 'Data\nCaseInfo\nState']]
-
-print(df1.head())
 
 xcol = 'Data\nCaseInfo\nCapacity (MW)'
 xlabel = 'Cumulative Capacity\n(MW)'
@@ -148,8 +147,8 @@ for reg in regions:
 # text=df2.loc[:, 'Data\nCaseInfo\nYear in service'].values.tolist(),
 #                          textposition='outside',
 
-title = 'CEP vs BAU Supply Curve, ' + scenario + ', ' + screens['key'] + ', Rough Cumulative, ' + 'Net Cost Savings ($/MWh)'
-height = 450
+title = 'CEP vs BAU Supply Curve, DSM Excluded, ' + 'CO2 = 60 USD/Ton, ' + 'Net Cost Savings ($/MWh)'
+height = 500
 width = 730
 
 # data = [trace0]
