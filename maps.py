@@ -17,10 +17,10 @@ df1 = df_dsm
 
 dfp = df1.loc[(df1['Scenario'] == scenario), :]
 count = dfp['Data\nCaseInfo\nLatitude'].isnull().sum()
-types = ['NGCT', 'NGCC']
+types = ['NGCC', 'NGCT']
 # print(dfp.loc[(dfp['Data\nCaseInfo\nType'] == types[1]), 'Data\nCaseInfo\nLatitude'])
-colors = ['rgb(0,255,255)', 'rgb(0,0,128)']
-scale = 100
+colors = ['rgb(0,0,128)', 'rgb(0,255,255)']
+scale = 50
 # fig = go.Figure()
 plants = []
 print(range(len(types)))
