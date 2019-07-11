@@ -17,13 +17,16 @@ df1 = df_dsm
 
 dfp = df1.loc[(df1['Scenario'] == scenario), :]
 count = dfp['Data\nCaseInfo\nLatitude'].isnull().sum()
-types = list(set(dfp['Data\nCaseInfo\nType'].unique()))
+types = ['NGCT', 'NGCC']
 # print(dfp.loc[(dfp['Data\nCaseInfo\nType'] == types[1]), 'Data\nCaseInfo\nLatitude'])
 colors = ['rgb(0,255,255)', 'rgb(0,0,128)']
 scale = 100
 # fig = go.Figure()
 plants = []
+print(range(len(types)))
 for i in range(len(types)):
+    print(colors[i])
+    print(types[i])
     dft = dfp.loc[(dfp['Data\nCaseInfo\nType'] == types[i])]
     type = go.Scattergeo(
             locationmode='USA-states',
