@@ -43,7 +43,7 @@ def save_pickle(contents, name):
 
 # df_dsm = pd.read_excel('/Users/gglazer/Downloads/DSM_20190614_1910.xlsx', sheet_name='SummaryOutputs')
 # df_tornado = pd.read_excel('/Users/gglazer/Desktop/Outputs_20190625_1352_tornado.xlsx', sheet_name='SummaryOutputs')
-# df_pipes_full = pd.read_excel('/Users/gglazer/PycharmProjects/cepm/results/SummaryOnly_dsm_COpx_20190708_1933.xlsx', sheet_name='SummaryOutputs')
+# df_pipes_full = pd.read_excel('/Users/gglazer/PycharmProjects/cepm/Pipelines Study Final/SummaryOnly_PipelineResults_20190716_1225.xlsx', sheet_name='SummaryOutputs')
 # save_pickle(df_pipes_full, 'pipelines_full')
 # df_tornado = load_pickle('tornado')
 # df_dsm = load_pickle('dsm')
@@ -52,10 +52,10 @@ df_pipes_full = load_pickle('pipelines_full')
 
 #------SETTINGS------####
 df1 = df_pipes_full  #
-ttl = 'Net LCOE'  # NPV, LCOE, Net, or Net LCOE
-key = 'All'  # NGCC or NGCT or All
-scenario = '3xdsm'  # can be any scenario in the df 4aNoDSM 2alowdsm
-tag = 'Final0.1'  # other identifying tag to be included in filename
+ttl = 'Net LCOE'  # NPV, LCOE, Net, or Net LCOE, or Net Cap
+key = 'NGCT'  # NGCC or NGCT or All
+scenario = '0main'  # can be any scenario in the df 4aNoDSM 2alowdsm
+tag = '1.1'  # other identifying tag to be included in filename
 reg_text = 'NRDC_region'  # Data\nCaseInfo\nRegion
 text = False
 export = False
@@ -67,12 +67,13 @@ if reg_text == 'NRDC_region':
                     'VT': 'New England', 'NY': 'New York', 'DE': 'Mid-Atlantic', 'DC': 'Mid-Atlantic', 'KY': 'Mid-Atlantic',
                     'MD': 'Mid-Atlantic', 'NJ': 'Mid-Atlantic', 'OH': 'Mid-Atlantic', 'PA': 'Mid-Atlantic',
                     'WV': 'Mid-Atlantic', 'NC': 'Southeast', 'SC': 'Southeast', 'VA': 'Southeast', 'IL': 'MISO',
-                    'IN': 'MISO', 'IA': 'MISO', 'MI': 'MISO', 'MN': 'MISO', 'MO': 'MISO', 'ND': 'MISO', 'WI': 'MISO'}
+                    'IN': 'MISO', 'IA': 'MISO', 'MI': 'MISO', 'MN': 'MISO', 'MO': 'MISO', 'ND': 'MISO', 'WI': 'MISO',
+                    'TN': 'TVA'}
 
     for row in df1.index:
-        df1.loc[row, reg_text] = nrdc_regions[df1.loc[row, 'Data\nCaseInfo\nState']]
+        df1.loc[row, reg_text] = nrdc_regions[df1.loc[row, 'Data CaseInfo State']]
 
-xcol = 'Data\nCaseInfo\nCapacity (MW)'
+xcol = 'Data CaseInfo Capacity (MW)'
 xlabel = 'Cumulative Capacity\n(MW)'
 if ttl == 'NPV':
     ycol = 'Cost\nComp\nBAU - CEP (000)'
@@ -85,10 +86,14 @@ elif ttl == 'Net':
     ycol = 'Net Cost Diff'
     ylabel = 'CEP Net Cost Savings\n($B)'
 elif ttl == 'Net LCOE':
-    df1['Net LCOE Diff'] = (df1['Cost\nBAU\nLCOE ($/MWh)'] - df1['Cost\nCEP\nNet LCOE ($/MWh)'])
+    df1['Net LCOE Diff'] = (df1['Cost BAU LCOE ($/MWh)'] - df1['Cost CEP Net LCOE ($/MWh)'])
     ycol = 'Net LCOE Diff'
     # changed for Pipelines
-    ylabel = 'CEP Cost Savings\n($/MWh)'
+    ylabel = 'CEP Cost Savings ($/MWh)'
+elif ttl == 'Net Cap':
+    df1['Net Cap Cost Diff'] = (df1['Cost BAU Capacity Gross ($/kW-y)'] - df1['Cost CEP Net Capacity ($/kW-y)'])
+    ycol = 'Net Cap Cost Diff'
+    ylabel = 'CEP Cost Savings ($/kW-y)'
 
 df_main = df1.loc[(df1['Scenario'] == scenario), :]
 df_main = df_main.sort_values(by=[ycol])
@@ -117,8 +122,9 @@ reg_colors_pipelines = {'New England': '#005289',
                           'New York': '#fbab18',
                           'Mid-Atlantic': '#507c1d',
                           'Southwest': '#5e0215',
-                          'West': '#DB6F11'}
-col = 'Data\nCaseInfo\nType'
+                          'West': '#DB6F11',
+                          'TVA': '#DB6F11'}
+col = 'Data CaseInfo Type'
 screens = {'col': col, 'key': key}
 
 if key != 'All':
@@ -147,14 +153,14 @@ for reg in regions:
 # text=df2.loc[:, 'Data\nCaseInfo\nYear in service'].values.tolist(),
 #                          textposition='outside',
 
-title = 'CEP vs BAU Supply Curve, DSM Excluded, ' + 'CO2 = 60 USD/Ton, ' + 'Net Cost Savings ($/MWh)'
+title = 'Net cost savings of replacing each planned ' + screens['key'] + ' with a CEP ($/kW-y)'
 height = 500
 width = 730
 
 # data = [trace0]
 # fig1 = go.Figure(data=data)
 fig['layout'].update(title=title, height=height, width=width, yaxis=dict(title=ylabel, tickformat='$,0'), xaxis=dict(title=xlabel))
-pio.write_image(fig, fig_path + 'supply_curve_'+scenario+'_'+screens['key']+'_'+ttl+'_'+tag+'.png')
+pio.write_image(fig, fig_path + tag+'_' + 'supply_curve_'+scenario+'_'+screens['key']+'_'+ttl+'.png')
 # files = []
 # for filename in os.listdir(fig_path):
 #     if filename.endswith('.pdf'):
